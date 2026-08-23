@@ -13,14 +13,12 @@ export default {
       });
     }
 
-    // API key test
     if (url.pathname === "/api/test") {
       return Response.json({
         openrouterConfigured: Boolean(env.OPENROUTER_API_KEY)
       });
     }
 
-    // Chat API
     if (url.pathname === "/api/chat" && request.method === "POST") {
       try {
         const body = await request.json();
@@ -96,223 +94,495 @@ export default {
       }
     }
 
-    // Armira UI
     if (url.pathname === "/" || url.pathname === "/test") {
       const html = `<!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#09090b">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#08070d">
 <title>Armira AI</title>
 
 <style>
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   width: 100%;
   height: 100%;
-  background: #09090b;
-  color: #f4f4f5;
-  font-family: system-ui, sans-serif;
+  background: #08070d;
+  color: #f8fafc;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 body {
   overflow: hidden;
 }
 
+button,
+textarea {
+  font-family: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
 .app {
+  position: relative;
   height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(124,58,237,.28), transparent 42%),
+    radial-gradient(circle at 100% 60%, rgba(59,130,246,.10), transparent 35%),
+    #08070d;
 }
 
+/* ---------- HEADER ---------- */
+
 .header {
-  height: 64px;
-  padding: 0 15px;
+  height: 68px;
+  min-height: 68px;
+  padding: 0 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #27272a;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(8,7,13,.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 10;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
+}
+
+.logo-wrap {
+  position: relative;
 }
 
 .logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 13px;
+  width: 43px;
+  height: 43px;
+  border-radius: 15px;
   display: grid;
   place-items: center;
   font-size: 22px;
-  background: linear-gradient(135deg,#7c3aed,#4f46e5);
+  background: linear-gradient(145deg, #8b5cf6, #4f46e5);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.10) inset,
+    0 8px 30px rgba(99,102,241,.30);
+}
+
+.status-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #08070d;
+  box-shadow: 0 0 10px rgba(34,197,94,.65);
+}
+
+.brand-text {
+  line-height: 1.15;
 }
 
 .name {
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -.2px;
 }
 
 .online {
-  font-size: 11px;
-  color: #22c55e;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #86efac;
+  letter-spacing: .2px;
 }
 
-.new {
-  width: 40px;
-  height: 40px;
-  border: 0;
-  border-radius: 12px;
-  background: #18181b;
-  color: white;
+.new-chat {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  color: #d4d4d8;
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(255,255,255,.08);
   font-size: 20px;
+  transition: .2s;
 }
+
+.new-chat:active {
+  transform: scale(.92);
+}
+
+/* ---------- CHAT ---------- */
 
 .chat {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 20px 13px;
+  scroll-behavior: smooth;
+  padding: 18px 13px 16px;
+}
+
+.chat::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.10);
+  border-radius: 20px;
 }
 
 .chatbox {
+  width: 100%;
   max-width: 760px;
   margin: auto;
 }
 
+/* ---------- WELCOME ---------- */
+
 .welcome {
-  min-height: 65vh;
+  min-height: calc(100dvh - 170px);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
+  padding: 20px 10px 50px;
 }
 
-.biglogo {
-  width: 76px;
-  height: 76px;
-  border-radius: 25px;
+.hero-logo {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  margin-bottom: 22px;
+}
+
+.hero-logo::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 34px;
+  background: rgba(124,58,237,.13);
+  filter: blur(15px);
+}
+
+.hero-logo-inner {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 29px;
   display: grid;
   place-items: center;
-  font-size: 38px;
-  background: linear-gradient(135deg,#7c3aed,#4f46e5);
-  margin-bottom: 18px;
+  font-size: 42px;
+  background: linear-gradient(145deg, #8b5cf6, #4338ca);
+  border: 1px solid rgba(255,255,255,.15);
+  box-shadow:
+    0 18px 50px rgba(79,70,229,.30),
+    inset 0 1px 1px rgba(255,255,255,.20);
 }
 
-h1 {
+.welcome h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: clamp(28px, 8vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -1.4px;
+  background: linear-gradient(90deg, #fff, #c4b5fd);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.welcome p {
-  max-width: 400px;
+.welcome-sub {
+  max-width: 390px;
+  margin: 13px 0 24px;
   color: #a1a1aa;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.6;
 }
+
+.suggestions {
+  width: 100%;
+  max-width: 540px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.suggestion {
+  min-height: 54px;
+  padding: 11px 12px;
+  text-align: left;
+  color: #d4d4d8;
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 16px;
+  transition: .2s;
+}
+
+.suggestion:active {
+  transform: scale(.97);
+  background: rgba(124,58,237,.12);
+}
+
+.suggestion-icon {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 16px;
+}
+
+.suggestion-text {
+  font-size: 11px;
+  color: #a1a1aa;
+}
+
+/* ---------- MESSAGES ---------- */
 
 .message {
   display: flex;
-  margin: 12px 0;
+  width: 100%;
+  margin: 14px 0;
+  animation: messageIn .22s ease;
+}
+
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .user {
   justify-content: flex-end;
 }
 
+.ai {
+  justify-content: flex-start;
+  gap: 9px;
+}
+
+.ai-avatar {
+  flex: 0 0 31px;
+  width: 31px;
+  height: 31px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  background: linear-gradient(145deg, #7c3aed, #4338ca);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 5px 18px rgba(79,70,229,.20);
+}
+
 .bubble {
-  max-width: 88%;
-  padding: 12px 15px;
-  border-radius: 17px;
-  line-height: 1.55;
+  max-width: min(88%, 650px);
+  padding: 12px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 .user .bubble {
-  background: #6d28d9;
-  border-bottom-right-radius: 5px;
+  color: white;
+  background: linear-gradient(145deg, #7c3aed, #5b21b6);
+  border: 1px solid rgba(255,255,255,.09);
+  border-bottom-right-radius: 6px;
+  box-shadow: 0 7px 25px rgba(91,33,182,.18);
 }
 
 .ai .bubble {
-  background: #18181b;
-  border: 1px solid #27272a;
-  border-bottom-left-radius: 5px;
+  color: #e4e4e7;
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.075);
+  border-bottom-left-radius: 6px;
 }
 
+/* ---------- TYPING ---------- */
+
+.typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 58px;
+  height: 42px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a78bfa;
+  animation: typing 1.2s infinite;
+}
+
+.dot:nth-child(2) {
+  animation-delay: .15s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: .30s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    opacity: .25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+/* ---------- COMPOSER ---------- */
+
 .composer-area {
-  padding: 10px 12px 14px;
-  border-top: 1px solid #18181b;
+  padding: 9px 12px calc(11px + env(safe-area-inset-bottom));
+  background: linear-gradient(
+    to top,
+    #08070d 72%,
+    rgba(8,7,13,.82)
+  );
+  z-index: 10;
 }
 
 .composer {
+  width: 100%;
   max-width: 760px;
   margin: auto;
+  min-height: 57px;
   display: flex;
-  gap: 7px;
   align-items: flex-end;
+  gap: 7px;
   padding: 7px;
-  border: 1px solid #3f3f46;
-  border-radius: 18px;
-  background: #18181b;
+  border-radius: 20px;
+  background: rgba(24,24,27,.88);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow:
+    0 15px 45px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 textarea {
   flex: 1;
+  min-width: 0;
   min-height: 42px;
-  max-height: 120px;
+  max-height: 125px;
   resize: none;
+  outline: none;
   border: 0;
-  outline: 0;
   background: transparent;
   color: white;
   padding: 11px 7px;
   font-size: 14px;
+  line-height: 20px;
 }
 
 textarea::placeholder {
   color: #71717a;
 }
 
-button {
-  cursor: pointer;
-}
-
-.icon,
-.send {
+.action {
+  flex: 0 0 42px;
   width: 42px;
   height: 42px;
-  border: 0;
-  border-radius: 13px;
-  color: white;
-  font-size: 18px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #d4d4d8;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.06);
+  font-size: 17px;
+  transition: .18s;
 }
 
-.icon {
-  background: #27272a;
+.action:active {
+  transform: scale(.91);
 }
 
 .send {
-  background: linear-gradient(135deg,#7c3aed,#4f46e5);
+  color: white;
+  background: linear-gradient(145deg, #8b5cf6, #4f46e5);
+  box-shadow: 0 7px 20px rgba(79,70,229,.28);
 }
 
 .send:disabled {
-  opacity: .4;
+  opacity: .38;
+  box-shadow: none;
 }
 
 .note {
   text-align: center;
+  margin-top: 7px;
   color: #52525b;
-  font-size: 10px;
-  margin-top: 6px;
+  font-size: 9px;
 }
 
-.typing {
-  color: #a1a1aa;
+/* ---------- MOBILE ---------- */
+
+@media (max-width: 430px) {
+  .header {
+    height: 62px;
+    min-height: 62px;
+  }
+
+  .logo {
+    width: 39px;
+    height: 39px;
+    border-radius: 13px;
+  }
+
+  .name {
+    font-size: 15px;
+  }
+
+  .welcome {
+    min-height: calc(100dvh - 160px);
+  }
+
+  .hero-logo,
+  .hero-logo-inner {
+    width: 78px;
+    height: 78px;
+  }
+
+  .hero-logo-inner {
+    font-size: 37px;
+    border-radius: 25px;
+  }
+
+  .suggestions {
+    grid-template-columns: 1fr;
+  }
+
+  .suggestion {
+    min-height: 48px;
+  }
+
+  .bubble {
+    font-size: 13.5px;
+  }
 }
 </style>
 </head>
@@ -323,53 +593,111 @@ button {
 
 <header class="header">
   <div class="brand">
-    <div class="logo">🤖</div>
-    <div>
+
+    <div class="logo-wrap">
+      <div class="logo">🤖</div>
+      <div class="status-dot"></div>
+    </div>
+
+    <div class="brand-text">
       <div class="name">Armira</div>
-      <div class="online">● Online</div>
+      <div class="online">● Online & ready</div>
     </div>
   </div>
 
-  <button class="new" onclick="newChat()">↻</button>
+  <button
+    class="new-chat"
+    onclick="newChat()"
+    aria-label="New chat"
+  >＋</button>
 </header>
 
 <main class="chat" id="chat">
+
   <div class="chatbox" id="chatbox">
 
-    <div class="welcome" id="welcome">
-      <div class="biglogo">🤖</div>
+    <section class="welcome" id="welcome">
+
+      <div class="hero-logo">
+        <div class="hero-logo-inner">🤖</div>
+      </div>
+
       <h1>How can I help?</h1>
-      <p>
-        I'm Armira, your AI assistant.
-        Start a conversation below.
-      </p>
-    </div>
+
+      <div class="welcome-sub">
+        I'm Armira — your personal AI assistant.
+        Ask me anything, brainstorm ideas, or just start a conversation.
+      </div>
+
+      <div class="suggestions">
+
+        <button
+          class="suggestion"
+          onclick="useSuggestion('Explain artificial intelligence simply')"
+        >
+          <span class="suggestion-icon">🧠</span>
+          <span class="suggestion-text">Explain AI simply</span>
+        </button>
+
+        <button
+          class="suggestion"
+          onclick="useSuggestion('Give me a creative idea for a YouTube video')"
+        >
+          <span class="suggestion-icon">✨</span>
+          <span class="suggestion-text">Give me a creative idea</span>
+        </button>
+
+        <button
+          class="suggestion"
+          onclick="useSuggestion('Help me learn something interesting')"
+        >
+          <span class="suggestion-icon">📚</span>
+          <span class="suggestion-text">Teach me something</span>
+        </button>
+
+        <button
+          class="suggestion"
+          onclick="useSuggestion('Tell me something interesting')"
+        >
+          <span class="suggestion-icon">💡</span>
+          <span class="suggestion-text">Surprise me</span>
+        </button>
+
+      </div>
+
+    </section>
 
   </div>
+
 </main>
 
 <div class="composer-area">
 
   <div class="composer">
 
-    <button class="icon" onclick="voice()">🎙️</button>
+    <button
+      class="action"
+      onclick="voice()"
+      aria-label="Voice"
+    >🎙️</button>
 
     <textarea
       id="input"
-      placeholder="Ask Armira..."
+      placeholder="Message Armira..."
       rows="1"
     ></textarea>
 
     <button
-      class="send"
+      class="action send"
       id="send"
       onclick="sendMessage()"
+      aria-label="Send"
     >➤</button>
 
   </div>
 
   <div class="note">
-    Armira can make mistakes. Check important information.
+    Armira may make mistakes. Check important information.
   </div>
 
 </div>
@@ -382,6 +710,11 @@ const send = document.getElementById("send");
 const chat = document.getElementById("chat");
 const chatbox = document.getElementById("chatbox");
 
+input.addEventListener("input", function() {
+  this.style.height = "auto";
+  this.style.height = Math.min(this.scrollHeight, 125) + "px";
+});
+
 input.addEventListener("keydown", function(e) {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
@@ -390,8 +723,18 @@ input.addEventListener("keydown", function(e) {
 });
 
 function removeWelcome() {
-  const w = document.getElementById("welcome");
-  if (w) w.remove();
+  const welcome = document.getElementById("welcome");
+
+  if (welcome) {
+    welcome.remove();
+  }
+}
+
+function useSuggestion(text) {
+  input.value = text;
+  input.dispatchEvent(new Event("input"));
+  input.focus();
+  sendMessage();
 }
 
 function addMessage(text, type) {
@@ -400,6 +743,13 @@ function addMessage(text, type) {
   const row = document.createElement("div");
   row.className = "message " + type;
 
+  if (type === "ai") {
+    const avatar = document.createElement("div");
+    avatar.className = "ai-avatar";
+    avatar.textContent = "🤖";
+    row.appendChild(avatar);
+  }
+
   const bubble = document.createElement("div");
   bubble.className = "bubble";
   bubble.textContent = text;
@@ -407,33 +757,57 @@ function addMessage(text, type) {
   row.appendChild(bubble);
   chatbox.appendChild(row);
 
+  requestAnimationFrame(function() {
+    chat.scrollTop = chat.scrollHeight;
+  });
+}
+
+function addTyping() {
+  const row = document.createElement("div");
+  row.className = "message ai";
+  row.id = "loading";
+
+  const avatar = document.createElement("div");
+  avatar.className = "ai-avatar";
+  avatar.textContent = "🤖";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble typing-bubble";
+
+  const d1 = document.createElement("span");
+  d1.className = "dot";
+
+  const d2 = document.createElement("span");
+  d2.className = "dot";
+
+  const d3 = document.createElement("span");
+  d3.className = "dot";
+
+  bubble.appendChild(d1);
+  bubble.appendChild(d2);
+  bubble.appendChild(d3);
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+
+  chatbox.appendChild(row);
   chat.scrollTop = chat.scrollHeight;
 }
 
 async function sendMessage() {
   const message = input.value.trim();
 
-  if (!message || send.disabled) return;
+  if (!message || send.disabled) {
+    return;
+  }
 
   input.value = "";
+  input.style.height = "auto";
+
   addMessage(message, "user");
 
   send.disabled = true;
-
-  removeWelcome();
-
-  const loading = document.createElement("div");
-  loading.className = "message ai";
-  loading.id = "loading";
-
-  const loadingBubble = document.createElement("div");
-  loadingBubble.className = "bubble typing";
-  loadingBubble.textContent = "Armira is thinking...";
-
-  loading.appendChild(loadingBubble);
-  chatbox.appendChild(loading);
-
-  chat.scrollTop = chat.scrollHeight;
+  addTyping();
 
   try {
     const response = await fetch("/api/chat", {
@@ -448,8 +822,11 @@ async function sendMessage() {
 
     const data = await response.json();
 
-    const oldLoading = document.getElementById("loading");
-    if (oldLoading) oldLoading.remove();
+    const loading = document.getElementById("loading");
+
+    if (loading) {
+      loading.remove();
+    }
 
     if (!response.ok) {
       addMessage(
@@ -465,8 +842,11 @@ async function sendMessage() {
 
   } catch (error) {
 
-    const oldLoading = document.getElementById("loading");
-    if (oldLoading) oldLoading.remove();
+    const loading = document.getElementById("loading");
+
+    if (loading) {
+      loading.remove();
+    }
 
     addMessage(
       "Connection error 😔 Please try again.",
@@ -488,7 +868,7 @@ function voice() {
     window.webkitSpeechRecognition;
 
   if (!Recognition) {
-    alert("Voice input is not supported here.");
+    alert("Voice input is not supported in this browser.");
     return;
   }
 
@@ -498,10 +878,13 @@ function voice() {
   recognition.interimResults = false;
 
   recognition.onresult = function(event) {
-    input.value =
-      event.results[0][0].transcript;
-
+    input.value = event.results[0][0].transcript;
+    input.dispatchEvent(new Event("input"));
     input.focus();
+  };
+
+  recognition.onerror = function() {
+    console.log("Voice recognition error");
   };
 
   recognition.start();
