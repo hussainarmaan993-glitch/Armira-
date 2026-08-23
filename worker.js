@@ -2,87 +2,50 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // ─────────────────────────────────────
-    // CORS
-    // ─────────────────────────────────────
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type"
-    };
-
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
-        headers: corsHeaders
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
       });
     }
 
-    // ─────────────────────────────────────
-    // API SECRET TEST
-    // ─────────────────────────────────────
+    // API key test
     if (url.pathname === "/api/test") {
-      return new Response(
-        JSON.stringify({
-          openrouterConfigured: Boolean(env.OPENROUTER_API_KEY)
-        }),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            ...corsHeaders
-          }
-        }
-      );
+      return Response.json({
+        openrouterConfigured: Boolean(env.OPENROUTER_API_KEY)
+      });
     }
 
-    // ─────────────────────────────────────
-    // CHAT API
-    // ─────────────────────────────────────
+    // Chat API
     if (url.pathname === "/api/chat" && request.method === "POST") {
       try {
         const body = await request.json();
-
-        const message =
-          typeof body?.message === "string"
-            ? body.message.trim()
-            : "";
+        const message = String(body?.message || "").trim();
 
         if (!message) {
-          return new Response(
-            JSON.stringify({
-              error: "Message is required."
-            }),
-            {
-              status: 400,
-              headers: {
-                "Content-Type": "application/json",
-                ...corsHeaders
-              }
-            }
+          return Response.json(
+            { error: "Message is required." },
+            { status: 400 }
           );
         }
 
         if (!env.OPENROUTER_API_KEY) {
-          return new Response(
-            JSON.stringify({
-              error: "OpenRouter API key is not configured."
-            }),
-            {
-              status: 500,
-              headers: {
-                "Content-Type": "application/json",
-                ...corsHeaders
-              }
-            }
+          return Response.json(
+            { error: "OpenRouter API key is missing." },
+            { status: 500 }
           );
         }
 
-        const openRouterResponse = await fetch(
+        const aiResponse = await fetch(
           "https://openrouter.ai/api/v1/chat/completions",
           {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
+              "Authorization": "Bearer " + env.OPENROUTER_API_KEY,
               "Content-Type": "application/json",
               "HTTP-Referer": url.origin,
               "X-Title": "Armira AI"
@@ -93,7 +56,7 @@ export default {
                 {
                   role: "system",
                   content:
-                    "You are Armira, a friendly, intelligent and helpful AI assistant. Answer naturally and clearly. Be concise when the user asks a simple question and provide detailed explanations when needed. Do not claim to have performed actions you cannot actually perform."
+                    "You are Armira, a friendly and helpful AI assistant. Answer naturally, clearly and accurately."
                 },
                 {
                   role: "user",
@@ -104,798 +67,459 @@ export default {
           }
         );
 
-        const data = await openRouterResponse.json();
+        const data = await aiResponse.json();
 
-        if (!openRouterResponse.ok) {
-          return new Response(
-            JSON.stringify({
+        if (!aiResponse.ok) {
+          return Response.json(
+            {
               error:
                 data?.error?.message ||
                 "OpenRouter request failed."
-            }),
-            {
-              status: openRouterResponse.status,
-              headers: {
-                "Content-Type": "application/json",
-                ...corsHeaders
-              }
-            }
+            },
+            { status: aiResponse.status }
           );
         }
 
         const answer =
           data?.choices?.[0]?.message?.content ||
-          "I couldn't generate a response.";
+          "I could not generate an answer.";
 
-        return new Response(
-          JSON.stringify({
-            answer
-          }),
-          {
-            headers: {
-              "Content-Type": "application/json",
-              ...corsHeaders
-            }
-          }
-        );
+        return Response.json({ answer });
 
       } catch (error) {
-        return new Response(
-          JSON.stringify({
-            error: error?.message || "Server error."
-          }),
+        return Response.json(
           {
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              ...corsHeaders
-            }
-          }
+            error: error?.message || "Server error."
+          },
+          { status: 500 }
         );
       }
     }
 
-    // ─────────────────────────────────────
-    // ARMIRA UI
-    // ─────────────────────────────────────
+    // Armira UI
     if (url.pathname === "/" || url.pathname === "/test") {
-      return new Response(`<!DOCTYPE html>
-<html lang="en">
+      const html = `<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-  >
-  <meta name="theme-color" content="#09090b">
-  <title>Armira AI</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#09090b">
+<title>Armira AI</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+<style>
+* {
+  box-sizing: border-box;
+}
 
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: #09090b;
-      color: #f4f4f5;
-      font-family:
-        Inter,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-    }
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: #09090b;
+  color: #f4f4f5;
+  font-family: system-ui, sans-serif;
+}
 
-    body {
-      overflow: hidden;
-    }
+body {
+  overflow: hidden;
+}
 
-    button,
-    input {
-      font: inherit;
-    }
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
 
-    .app {
-      width: 100%;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      background:
-        radial-gradient(
-          circle at 50% -10%,
-          rgba(124, 58, 237, 0.18),
-          transparent 35%
-        ),
-        #09090b;
-    }
+.header {
+  height: 64px;
+  padding: 0 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #27272a;
+}
 
-    /* HEADER */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-    .header {
-      height: 64px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      background: rgba(9,9,11,0.82);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-    }
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  background: linear-gradient(135deg,#7c3aed,#4f46e5);
+}
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-    }
+.name {
+  font-weight: 700;
+}
 
-    .logo {
-      width: 38px;
-      height: 38px;
-      border-radius: 13px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 21px;
-      background: linear-gradient(135deg, #7c3aed, #4f46e5);
-      box-shadow: 0 8px 25px rgba(124,58,237,0.28);
-    }
+.online {
+  font-size: 11px;
+  color: #22c55e;
+}
 
-    .brand-text {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.15;
-    }
+.new {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: #18181b;
+  color: white;
+  font-size: 20px;
+}
 
-    .brand-name {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.2px;
-    }
+.chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 13px;
+}
 
-    .status {
-      margin-top: 3px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      color: #a1a1aa;
-    }
+.chatbox {
+  max-width: 760px;
+  margin: auto;
+}
 
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 8px rgba(34,197,94,0.8);
-    }
+.welcome {
+  min-height: 65vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
 
-    .new-chat {
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
-      color: #e4e4e7;
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-size: 20px;
-    }
+.biglogo {
+  width: 76px;
+  height: 76px;
+  border-radius: 25px;
+  display: grid;
+  place-items: center;
+  font-size: 38px;
+  background: linear-gradient(135deg,#7c3aed,#4f46e5);
+  margin-bottom: 18px;
+}
 
-    .new-chat:active {
-      transform: scale(0.94);
-    }
+h1 {
+  margin: 0;
+  font-size: 28px;
+}
 
-    /* CHAT */
+.welcome p {
+  max-width: 400px;
+  color: #a1a1aa;
+  line-height: 1.5;
+}
 
-    .chat {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px 14px 18px;
-      scroll-behavior: smooth;
-    }
+.message {
+  display: flex;
+  margin: 12px 0;
+}
 
-    .chat-inner {
-      width: 100%;
-      max-width: 780px;
-      margin: 0 auto;
-    }
+.user {
+  justify-content: flex-end;
+}
 
-    .welcome {
-      min-height: 58vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 30px 15px;
-    }
+.bubble {
+  max-width: 88%;
+  padding: 12px 15px;
+  border-radius: 17px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 
-    .welcome-logo {
-      width: 74px;
-      height: 74px;
-      border-radius: 25px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 39px;
-      background: linear-gradient(135deg, #7c3aed, #4f46e5);
-      box-shadow:
-        0 18px 50px rgba(124,58,237,0.28);
-      margin-bottom: 20px;
-    }
+.user .bubble {
+  background: #6d28d9;
+  border-bottom-right-radius: 5px;
+}
 
-    .welcome h1 {
-      margin: 0;
-      font-size: 29px;
-      letter-spacing: -0.7px;
-    }
+.ai .bubble {
+  background: #18181b;
+  border: 1px solid #27272a;
+  border-bottom-left-radius: 5px;
+}
 
-    .welcome p {
-      margin: 10px 0 0;
-      max-width: 430px;
-      color: #a1a1aa;
-      font-size: 14px;
-      line-height: 1.6;
-    }
+.composer-area {
+  padding: 10px 12px 14px;
+  border-top: 1px solid #18181b;
+}
 
-    .suggestions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 9px;
-      width: 100%;
-      max-width: 520px;
-      margin-top: 25px;
-    }
+.composer {
+  max-width: 760px;
+  margin: auto;
+  display: flex;
+  gap: 7px;
+  align-items: flex-end;
+  padding: 7px;
+  border: 1px solid #3f3f46;
+  border-radius: 18px;
+  background: #18181b;
+}
 
-    .suggestion {
-      padding: 13px;
-      text-align: left;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.035);
-      color: #d4d4d8;
-      cursor: pointer;
-      font-size: 13px;
-    }
+textarea {
+  flex: 1;
+  min-height: 42px;
+  max-height: 120px;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: white;
+  padding: 11px 7px;
+  font-size: 14px;
+}
 
-    .suggestion:active {
-      transform: scale(0.98);
-      background: rgba(255,255,255,0.07);
-    }
+textarea::placeholder {
+  color: #71717a;
+}
 
-    .message {
-      display: flex;
-      margin: 12px 0;
-      animation: appear 0.2s ease;
-    }
+button {
+  cursor: pointer;
+}
 
-    @keyframes appear {
-      from {
-        opacity: 0;
-        transform: translateY(5px);
-      }
+.icon,
+.send {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 13px;
+  color: white;
+  font-size: 18px;
+}
 
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+.icon {
+  background: #27272a;
+}
 
-    .message.user {
-      justify-content: flex-end;
-    }
+.send {
+  background: linear-gradient(135deg,#7c3aed,#4f46e5);
+}
 
-    .bubble {
-      max-width: 86%;
-      padding: 12px 15px;
-      border-radius: 18px;
-      line-height: 1.55;
-      font-size: 14px;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
+.send:disabled {
+  opacity: .4;
+}
 
-    .message.user .bubble {
-      background: #6d28d9;
-      color: white;
-      border-bottom-right-radius: 5px;
-    }
+.note {
+  text-align: center;
+  color: #52525b;
+  font-size: 10px;
+  margin-top: 6px;
+}
 
-    .message.assistant .bubble {
-      background: rgba(255,255,255,0.055);
-      border: 1px solid rgba(255,255,255,0.07);
-      color: #e4e4e7;
-      border-bottom-left-radius: 5px;
-    }
-
-    .typing {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      min-width: 48px;
-    }
-
-    .typing span {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #a1a1aa;
-      animation: bounce 1s infinite;
-    }
-
-    .typing span:nth-child(2) {
-      animation-delay: 0.15s;
-    }
-
-    .typing span:nth-child(3) {
-      animation-delay: 0.3s;
-    }
-
-    @keyframes bounce {
-      0%, 60%, 100% {
-        transform: translateY(0);
-        opacity: 0.45;
-      }
-
-      30% {
-        transform: translateY(-4px);
-        opacity: 1;
-      }
-    }
-
-    /* COMPOSER */
-
-    .composer-area {
-      flex-shrink: 0;
-      padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
-      background: linear-gradient(
-        to top,
-        #09090b 70%,
-        rgba(9,9,11,0.75)
-      );
-    }
-
-    .composer {
-      width: 100%;
-      max-width: 780px;
-      margin: 0 auto;
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
-      padding: 8px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(24,24,27,0.92);
-      border-radius: 20px;
-      box-shadow: 0 10px 35px rgba(0,0,0,0.28);
-    }
-
-    .composer textarea {
-      flex: 1;
-      min-height: 42px;
-      max-height: 130px;
-      resize: none;
-      outline: none;
-      border: 0;
-      background: transparent;
-      color: #f4f4f5;
-      padding: 11px 7px;
-      font-size: 14px;
-      line-height: 1.45;
-    }
-
-    .composer textarea::placeholder {
-      color: #71717a;
-    }
-
-    .icon-btn,
-    .send-btn {
-      flex-shrink: 0;
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
-      border: 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
-
-    .icon-btn {
-      background: rgba(255,255,255,0.06);
-      color: #d4d4d8;
-    }
-
-    .send-btn {
-      background: linear-gradient(135deg, #7c3aed, #4f46e5);
-      color: white;
-    }
-
-    .send-btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .disclaimer {
-      text-align: center;
-      color: #52525b;
-      font-size: 10px;
-      margin-top: 7px;
-    }
-
-    @media (max-width: 500px) {
-      .welcome h1 {
-        font-size: 26px;
-      }
-
-      .suggestions {
-        grid-template-columns: 1fr;
-      }
-
-      .bubble {
-        max-width: 90%;
-      }
-    }
-  </style>
+.typing {
+  color: #a1a1aa;
+}
+</style>
 </head>
 
 <body>
-  <div class="app">
 
-    <header class="header">
-      <div class="brand">
-        <div class="logo">🤖</div>
+<div class="app">
 
-        <div class="brand-text">
-          <div class="brand-name">Armira</div>
+<header class="header">
+  <div class="brand">
+    <div class="logo">🤖</div>
+    <div>
+      <div class="name">Armira</div>
+      <div class="online">● Online</div>
+    </div>
+  </div>
 
-          <div class="status">
-            <span class="status-dot"></span>
-            Online
-          </div>
-        </div>
-      </div>
+  <button class="new" onclick="newChat()">↻</button>
+</header>
 
-      <button
-        class="new-chat"
-        onclick="newChat()"
-        title="New chat"
-      >
-        ↻
-      </button>
-    </header>
+<main class="chat" id="chat">
+  <div class="chatbox" id="chatbox">
 
-    <main class="chat" id="chat">
-      <div class="chat-inner" id="chatInner">
+    <div class="welcome" id="welcome">
+      <div class="biglogo">🤖</div>
+      <h1>How can I help?</h1>
+      <p>
+        I'm Armira, your AI assistant.
+        Start a conversation below.
+      </p>
+    </div>
 
-        <section class="welcome" id="welcome">
-          <div class="welcome-logo">🤖</div>
+  </div>
+</main>
 
-          <h1>How can I help?</h1>
+<div class="composer-area">
 
-          <p>
-            I'm Armira, your AI assistant. Ask me anything,
-            brainstorm ideas, or just start a conversation.
-          </p>
+  <div class="composer">
 
-          <div class="suggestions">
-            <button
-              class="suggestion"
-              onclick="useSuggestion('Explain artificial intelligence simply')"
-            >
-              🧠 Explain AI simply
-            </button>
+    <button class="icon" onclick="voice()">🎙️</button>
 
-            <button
-              class="suggestion"
-              onclick="useSuggestion('Give me some creative ideas')"
-            >
-              💡 Give me creative ideas
-            </button>
+    <textarea
+      id="input"
+      placeholder="Ask Armira..."
+      rows="1"
+    ></textarea>
 
-            <button
-              class="suggestion"
-              onclick="useSuggestion('Help me write something')"
-            >
-              ✍️ Help me write
-            </button>
-
-            <button
-              class="suggestion"
-              onclick="useSuggestion('Tell me something interesting')"
-            >
-              ✨ Tell me something interesting
-            </button>
-          </div>
-        </section>
-
-      </div>
-    </main>
-
-    <section class="composer-area">
-      <div class="composer">
-
-        <button
-          class="icon-btn"
-          id="voiceBtn"
-          onclick="startVoice()"
-          title="Voice input"
-        >
-          🎙️
-        </button>
-
-        <textarea
-          id="messageInput"
-          rows="1"
-          placeholder="Ask Armira..."
-          autocomplete="off"
-        ></textarea>
-
-        <button
-          class="send-btn"
-          id="sendBtn"
-          onclick="sendMessage()"
-          title="Send"
-        >
-          ➤
-        </button>
-
-      </div>
-
-      <div class="disclaimer">
-        Armira can make mistakes. Check important information.
-      </div>
-    </section>
+    <button
+      class="send"
+      id="send"
+      onclick="sendMessage()"
+    >➤</button>
 
   </div>
 
-  <script>
-    const input = document.getElementById("messageInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const chat = document.getElementById("chat");
-    const chatInner = document.getElementById("chatInner");
+  <div class="note">
+    Armira can make mistakes. Check important information.
+  </div>
 
-    let welcome = document.getElementById("welcome");
+</div>
 
-    input.addEventListener("input", () => {
-      input.style.height = "auto";
-      input.style.height =
-        Math.min(input.scrollHeight, 130) + "px";
+</div>
+
+<script>
+const input = document.getElementById("input");
+const send = document.getElementById("send");
+const chat = document.getElementById("chat");
+const chatbox = document.getElementById("chatbox");
+
+input.addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+function removeWelcome() {
+  const w = document.getElementById("welcome");
+  if (w) w.remove();
+}
+
+function addMessage(text, type) {
+  removeWelcome();
+
+  const row = document.createElement("div");
+  row.className = "message " + type;
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+
+  row.appendChild(bubble);
+  chatbox.appendChild(row);
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function sendMessage() {
+  const message = input.value.trim();
+
+  if (!message || send.disabled) return;
+
+  input.value = "";
+  addMessage(message, "user");
+
+  send.disabled = true;
+
+  removeWelcome();
+
+  const loading = document.createElement("div");
+  loading.className = "message ai";
+  loading.id = "loading";
+
+  const loadingBubble = document.createElement("div");
+  loadingBubble.className = "bubble typing";
+  loadingBubble.textContent = "Armira is thinking...";
+
+  loading.appendChild(loadingBubble);
+  chatbox.appendChild(loading);
+
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: message
+      })
     });
 
-    input.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-      }
-    });
+    const data = await response.json();
 
-    function useSuggestion(text) {
-      input.value = text;
-      input.focus();
-      sendMessage();
+    const oldLoading = document.getElementById("loading");
+    if (oldLoading) oldLoading.remove();
+
+    if (!response.ok) {
+      addMessage(
+        "Sorry 😔 " + (data.error || "Something went wrong."),
+        "ai"
+      );
+    } else {
+      addMessage(
+        data.answer || "No answer received.",
+        "ai"
+      );
     }
 
-    function removeWelcome() {
-      if (welcome) {
-        welcome.remove();
-        welcome = null;
-      }
-    }
+  } catch (error) {
 
-    function addMessage(text, type) {
-      removeWelcome();
+    const oldLoading = document.getElementById("loading");
+    if (oldLoading) oldLoading.remove();
 
-      const wrapper = document.createElement("div");
-      wrapper.className = "message " + type;
+    addMessage(
+      "Connection error 😔 Please try again.",
+      "ai"
+    );
+  }
 
-      const bubble = document.createElement("div");
-      bubble.className = "bubble";
-      bubble.textContent = text;
+  send.disabled = false;
+  input.focus();
+}
 
-      wrapper.appendChild(bubble);
-      chatInner.appendChild(wrapper);
-
-      scrollToBottom();
-
-      return wrapper;
-    }
-
-    function addTyping() {
-      removeWelcome();
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "message assistant";
-      wrapper.id = "typingMessage";
-
-      const bubble = document.createElement("div");
-      bubble.className = "bubble";
-
-      bubble.innerHTML =
-  '<div class="typing">' +
-    '<span></span>' +
-    '<span></span>' +
-    '<span></span>' +
-  '</div>';
-
-      wrapper.appendChild(bubble);
-      chatInner.appendChild(wrapper);
-
-      scrollToBottom();
-    }
-
-    function removeTyping() {
-      const typing = document.getElementById("typingMessage");
-
-      if (typing) {
-        typing.remove();
-      }
-    }
-
-    function scrollToBottom() {
-      setTimeout(() => {
-        chat.scrollTop = chat.scrollHeight;
-      }, 20);
-    }
-
-    async function sendMessage() {
-      const message = input.value.trim();
-
-      if (!message || sendBtn.disabled) {
-        return;
-      }
-
-      input.value = "";
-      input.style.height = "42px";
-
-      addMessage(message, "user");
-
-      sendBtn.disabled = true;
-      addTyping();
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            message: message
-          })
-        });
-
-        const data = await response.json();
-
-        removeTyping();
-
-        if (!response.ok) {
-          addMessage(
-            "Sorry 😔 " +
-            (data.error || "Something went wrong."),
-            "assistant"
-          );
-        } else {
-          addMessage(
-            data.answer || "I didn't receive an answer.",
-            "assistant"
-          );
-        }
-
-      } catch (error) {
-        removeTyping();
-
-        addMessage(
-          "Connection error 😔 Please try again.",
-          "assistant"
-        );
-      }
-
-      sendBtn.disabled = false;
-      input.focus();
-    }
-
-    function newChat() {
-      chatInner.innerHTML = `
-        <function newChat() {
+function newChat() {
   location.reload();
-        }
+}
 
-        
-              🧠 Explain AI simply
-            </button>
+function voice() {
+  const Recognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
 
-            <button
-              class="suggestion"
-              onclick="useSuggestion('Give me some creative ideas')"
-            >
-              💡 Give me creative ideas
-            </button>
+  if (!Recognition) {
+    alert("Voice input is not supported here.");
+    return;
+  }
 
-            <button
-              class="suggestion"
-              onclick="useSuggestion('Help me write something')"
-            >
-              ✍️ Help me write
-            </button>
+  const recognition = new Recognition();
 
-            <button
-              class="suggestion"
-              onclick="useSuggestion('Tell me something interesting')"
-            >
-              ✨ Tell me something interesting
-            </button>
-          </div>
-        </section>
-      `;
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
 
-      welcome = document.getElementById("welcome");
-      input.value = "";
-      input.focus();
-    }
+  recognition.onresult = function(event) {
+    input.value =
+      event.results[0][0].transcript;
 
-    function startVoice() {
-      const SpeechRecognition =
-        window.SpeechRecognition ||
-        window.webkitSpeechRecognition;
+    input.focus();
+  };
 
-      if (!SpeechRecognition) {
-        alert(
-          "Voice input is not supported by this browser."
-        );
-        return;
-      }
+  recognition.start();
+}
+</script>
 
-      const recognition = new SpeechRecognition();
-
-      recognition.lang = "en-US";
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => {
-        document.getElementById("voiceBtn").textContent = "🔴";
-      };
-
-      recognition.onresult = (event) => {
-        const transcript =
-          event.results[0][0].transcript;
-
-        input.value = transcript;
-        input.dispatchEvent(new Event("input"));
-      };
-
-      recognition.onerror = () => {
-        document.getElementById("voiceBtn").textContent = "🎙️";
-      };
-
-      recognition.onend = () => {
-        document.getElementById("voiceBtn").textContent = "🎙️";
-      };
-
-      recognition.start();
-    }
-  </script>
 </body>
-</html>`, {
+</html>`;
+
+      return new Response(html, {
         headers: {
           "Content-Type": "text/html; charset=UTF-8"
         }
       });
     }
 
-    // ─────────────────────────────────────
-    // NOT FOUND
-    // ─────────────────────────────────────
     return new Response("Not Found", {
-      status: 404,
-      headers: corsHeaders
+      status: 404
     });
   }
 };
