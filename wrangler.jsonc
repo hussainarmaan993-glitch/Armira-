@@ -1,5 +1,8 @@
 {
   "name": "throbbing-sun-599b",
   "main": "worker.js",
-  "compatibility_date": "2026-08-23"
+  "compatibility_date": "2026-08-23",
+  "secrets": {
+    "required": ["OPENROUTER_API_KEY"]
+  }
 }
