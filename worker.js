@@ -808,18 +808,7 @@ export default {
   location.reload();
         }
 
-          <h1>How can I help?</h1>
-
-          <p>
-            I'm Armira, your AI assistant. Ask me anything,
-            brainstorm ideas, or just start a conversation.
-          </p>
-
-          <div class="suggestions">
-            <button
-              class="suggestion"
-              onclick="useSuggestion('Explain artificial intelligence simply')"
-            >
+        
               🧠 Explain AI simply
             </button>
 
