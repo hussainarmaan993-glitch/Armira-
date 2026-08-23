@@ -719,13 +719,12 @@ export default {
       const bubble = document.createElement("div");
       bubble.className = "bubble";
 
-      bubble.innerHTML = `
-        <div class="typing">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      `;
+      bubble.innerHTML =
+  '<div class="typing">' +
+    '<span></span>' +
+    '<span></span>' +
+    '<span></span>' +
+  '</div>';
 
       wrapper.appendChild(bubble);
       chatInner.appendChild(wrapper);
