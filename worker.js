@@ -804,8 +804,9 @@ export default {
 
     function newChat() {
       chatInner.innerHTML = `
-        <section class="welcome" id="welcome">
-          <div class="welcome-logo">🤖</div>
+        <function newChat() {
+  location.reload();
+        }-logo">🤖</div>
 
           <h1>How can I help?</h1>
 
