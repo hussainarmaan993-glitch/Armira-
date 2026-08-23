@@ -2,10 +2,9 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "armira",
   "main": "worker.js",
-  "compatibility_date": "2026-08-22",
-  "keep_vars": true,
-  "assets": {
-    "directory": "./public",
-    "binding": "ASSETS"
-  }
-}
+  "{
+  "name": "throbbing-sun-599b",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-23"
+}"
+
