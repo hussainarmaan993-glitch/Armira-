@@ -806,7 +806,7 @@ export default {
       chatInner.innerHTML = `
         <function newChat() {
   location.reload();
-        }-logo">🤖</div>
+        }
 
           <h1>How can I help?</h1>
 
